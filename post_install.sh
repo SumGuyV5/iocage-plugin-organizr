@@ -75,4 +75,4 @@ service nginx start
 service php-fpm start
 
 echo -e "Organizr now installed.\n" > /root/PLUGIN_INFO
-echo -e "\nGo to $IP_ADDRESS and complete the setup.\n" >> /root/PLUGIN_INFO
+echo -e "\nGo to http://$IP_ADDRESS and complete the setup.\n" >> /root/PLUGIN_INFO
