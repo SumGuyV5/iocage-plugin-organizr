@@ -1,59 +1,16 @@
 #!/bin/sh -x
 IP_ADDRESS=$(ifconfig | grep -E 'inet.[0-9]' | grep -v '127.0.0.1' | awk '{ print $2}')
+MY_SERVER_NAME=$(hostname)
 
-#cp nginx.conf /usr/local/etc/nginx/nginx.conf
-cat > /usr/local/etc/nginx/nginx.conf <<EOF
-user  www;
-worker_processes  1;
+mkdir -p /usr/local/etc/ssl/private/
+mkdir -p /usr/local/etc/ssl/certs/
 
-events {
-    worker_connections  1024;
-}
+openssl genrsa -out nginx-selfsigned.key 2048
 
-http {
-    include       mime.types;
-    default_type  application/octet-stream;
+openssl req -new -x509 -days 365 -key nginx-selfsigned.key -out nginx-selfsigned.crt -sha256 -subj "/C=CA/ST=ONTARIO/L=TORONTO/O=Global Security/OU=IT Department/CN=${MY_SERVER_NAME}"
 
-    sendfile        on;
-    keepalive_timeout  65;
-
-    server {
-        listen       80;
-        server_name  sage;
-        #charset koi8-r;
-
-        #access_log  logs/host.access.log  main;
-
-        location / {
-            root   /usr/local/www/Organizr;
-            index  index.php index.html index.htm;	 
-	}
-	location /api/v2 {
-	    try_files \$uri /api/v2/index.php\$is_args\$args;
-        }
-
-        #error_page  404              /404.html;
-
-        # redirect server error pages to the static page /50x.html
-        #
-        error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-            root   /usr/local/www/nginx-dist;
-        }
-
-        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
-        #
-        location ~ \.php$ {
-            root /usr/local/www/Organizr;
-	    fastcgi_split_path_info ^(.+\.php)(/.+)$;
-	    fastcgi_pass unix:/var/run/php-fpm.sock;
-	    fastcgi_index index.php;
-	    fastcgi_param SCRIPT_FILENAME \$request_filename;
-	    include fastcgi_params;
-	}
-    }
-}
-EOF
+mv nginx-selfsigned.key /usr/local/etc/ssl/private/
+mv nginx-selfsigned.crt /usr/local/etc/ssl/certs/
 
 echo 'listen = /var/run/php-fpm.sock' >> /usr/local/etc/php-fpm.conf
 echo 'listen.owner = www' >> /usr/local/etc/php-fpm.conf
@@ -75,4 +32,4 @@ service nginx start
 service php-fpm start
 
 echo -e "Organizr now installed.\n" > /root/PLUGIN_INFO
-echo -e "\nGo to http://$IP_ADDRESS and complete the setup.\n" >> /root/PLUGIN_INFO
+echo -e "\nGo to https://$IP_ADDRESS and complete the setup.\n" >> /root/PLUGIN_INFO
